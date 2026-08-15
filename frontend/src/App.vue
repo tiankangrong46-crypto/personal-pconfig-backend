@@ -1,8 +1,55 @@
 <script setup>
-import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { cpuModels } from './data/cpuModels'
 import { motherboardChipsets } from './data/motherboardChipsets'
 import { gpuModels } from './data/gpuModels'
+
+const copy = {
+  zh: {
+    switchLanguage: 'EN', checkIngredients: '查查成分', clear: '清空配置', export: '导出配置', bilingualExport: '以中英文导出', selected: '已选', item: '项',
+    heroTitle: '装机', heroSubtitle: '？！装装？！', heroCopy: '从处理器到机箱，循序完成属于你的硬件搭配。选择没有标准答案，只有更接近你工作方式的配置。', start: '开始配置',
+    selectComponents: '选择组件', back: '返回全部组件', searchCpu: '在 {count} 个 CPU 型号中搜索', searchGpu: '在 {count} 个显卡型号中搜索', cpuPlaceholder: '例如：Ryzen 7 7800X3D 或 Core i5-14600K', gpuPlaceholder: '例如：RTX 5090 D V2、RX 9070 XT 或 Arc B580', boardSize: '主板规格',
+    choose: '选择', chosen: '已选择', incompatible: '与已选 CPU、主板或内存不兼容', memoryIncompatible: '与已选 CPU 或主板的内存代际不兼容', memorySlots: '注意主板内存插槽', gpuSlots: '注意主板 PCIe 插槽', storagePorts: '注意主板存储接口',
+    memoryChosen: '已选择 {count} / 4 条内存。{notice}', gpuChosen: '已选择 {count} / 4 张显卡。{notice}', storageChosen: 'PCIe {pcie} / 5，SATA + 机械硬盘 {other}。{notice}', clearMemory: '清空内存选择', clearGpu: '清空显卡选择', clearStorage: '清空存储选择', loadMore: '加载更多（已显示 {shown} / {total}）', noCpu: '没有匹配的 CPU 型号。', noGpu: '没有匹配的显卡型号。', selectedCount: '已选 {selected} / {total} 个组件', continue: '继续搭配', available: '可选', maxSupport: '最大支持', socket: '插槽',
+    maxGpu: '最多可选择 4 张显卡。', maxMemory: '最多可选择 4 条内存。', memorySame: '已选择 {name}，内存条的代际和容量必须一致。', maxStorage: '{standard} 最多可选择 {count} 个。',
+    exportTitle: '装机配置', exportTime: '导出时间', exportEmpty: '尚未选择任何组件。', bilingualTitle: 'PC Configuration / 装机配置', bilingualTime: 'Exported / 导出时间', bilingualEmpty: 'No components selected. / 尚未选择任何组件。',
+  },
+  en: {
+    switchLanguage: '中文', checkIngredients: 'Ingredients', clear: 'Clear', export: 'Export', bilingualExport: 'Bilingual export', selected: 'Selected', item: 'items',
+    heroTitle: 'BUILD', heroSubtitle: '?! BUILD ?!', heroCopy: 'Move from processor to case and assemble a configuration that fits the way you work. There is no standard answer, only a more suitable build.', start: 'Start configuring',
+    selectComponents: 'SELECT COMPONENTS', back: 'Back to all components', searchCpu: 'Search {count} CPU models', searchGpu: 'Search {count} GPU models', cpuPlaceholder: 'e.g. Ryzen 7 7800X3D or Core i5-14600K', gpuPlaceholder: 'e.g. RTX 5090 D V2, RX 9070 XT, or Arc B580', boardSize: 'Motherboard size',
+    choose: 'Choose', chosen: 'Selected', incompatible: 'Incompatible with the selected CPU, motherboard, or memory', memoryIncompatible: 'Incompatible with the selected CPU or motherboard memory generation', memorySlots: 'Check motherboard memory slots', gpuSlots: 'Check motherboard PCIe slots', storagePorts: 'Check motherboard storage ports',
+    memoryChosen: '{count} / 4 memory modules selected. {notice}', gpuChosen: '{count} / 4 graphics cards selected. {notice}', storageChosen: 'PCIe {pcie} / 5, SATA + HDD {other}. {notice}', clearMemory: 'Clear memory', clearGpu: 'Clear graphics cards', clearStorage: 'Clear storage', loadMore: 'Load more ({shown} / {total} shown)', noCpu: 'No matching CPU models.', noGpu: 'No matching GPU models.', selectedCount: '{selected} / {total} components selected', continue: 'Continue building', available: 'Available', maxSupport: 'Max support', socket: 'Socket',
+    maxGpu: 'You can select up to 4 graphics cards.', maxMemory: 'You can select up to 4 memory modules.', memorySame: '{name} is selected. Memory generation and capacity must match.', maxStorage: 'You can select up to {count} {standard} drives.',
+    exportTitle: 'PC Configuration', exportTime: 'Exported', exportEmpty: 'No components selected.', bilingualTitle: 'PC Configuration / 装机配置', bilingualTime: 'Exported / 导出时间', bilingualEmpty: 'No components selected. / 尚未选择任何组件。',
+  },
+}
+
+const categoryCopy = {
+  cpu: { zh: ['CPU', '处理器', '提供 AMD Ryzen 与第五代及以上 Intel Core 消费级处理器。'], en: ['CPU', 'Processor', 'AMD Ryzen and 5th-generation-or-newer Intel Core consumer processors.'] },
+  motherboard: { zh: ['主板', '连接平台', '按 CPU 插槽和代际选择消费级主板芯片组。'], en: ['Motherboard', 'Platform', 'Choose consumer motherboard chipsets by CPU socket and generation.'] },
+  gpu: { zh: ['显卡', '图形性能', '选择 NVIDIA、AMD Radeon 或 Intel Arc 消费级显卡。'], en: ['Graphics card', 'Graphics', 'Choose NVIDIA, AMD Radeon, or Intel Arc consumer graphics cards.'] },
+  memory: { zh: ['内存', '运行内存', '最多选择 4 条内存，注意主板内存代际与插槽数量。'], en: ['Memory', 'System memory', 'Select up to four modules and check the motherboard memory generation and slot count.'] },
+  storage: { zh: ['存储', '数据存储', 'PCIe、SATA 与机械硬盘可组合选择，注意主板接口数量。'], en: ['Storage', 'Data storage', 'Combine PCIe, SATA, and hard drives while checking motherboard ports.'] },
+  power: { zh: ['电源', '供电方案', '按整机功耗选择供电余量。'], en: ['Power supply', 'Power delivery', 'Choose adequate headroom for total system power draw.'] },
+  cooler: { zh: ['散热器', '温度控制', '选择风冷热管方案或一体式水冷排规格。'], en: ['Cooler', 'Thermal control', 'Choose an air-cooler heat-pipe layout or all-in-one liquid radiator size.'] },
+  case: { zh: ['机箱', '整机外观', '机箱尺寸决定可容纳的主板规格。'], en: ['Case', 'Enclosure', 'Case size determines the supported motherboard form factor.'] },
+}
+
+const language = ref('zh')
+const t = (key, values = {}) => (copy[language.value][key] || key).replace(/\{(\w+)\}/g, (_, name) => values[name] ?? '')
+const categoryText = (slug, index) => categoryCopy[slug]?.[language.value]?.[index] || ''
+const categoryLabel = (slug) => categoryText(slug, 0)
+const setLanguage = () => {
+  language.value = language.value === 'zh' ? 'en' : 'zh'
+  memoryNotice.value = ''
+  gpuNotice.value = ''
+  storageNotice.value = ''
+}
+
+watch(language, (value) => {
+  document.documentElement.lang = value === 'zh' ? 'zh-CN' : 'en'
+})
 
 function isSupportedIntelCpu(model) {
   if (model.startsWith('Intel Core Ultra')) return true
@@ -113,8 +160,8 @@ function productDisabled(category, product) {
 
 function disabledReason(category, product) {
   if (!productDisabled(category, product)) return ''
-  if (category.slug === 'memory') return '与已选 CPU 或主板的内存代际不兼容'
-  return '与已选 CPU、主板或内存不兼容'
+  if (category.slug === 'memory') return t('memoryIncompatible')
+  return t('incompatible')
 }
 
 function navigate(path) {
@@ -135,7 +182,7 @@ function choose(category, product) {
   if (productDisabled(category, product)) return
   if (category.slug === 'gpu') {
     if (gpuSelections.value.length >= 4) {
-      gpuNotice.value = '最多可选择 4 张显卡。'
+      gpuNotice.value = t('maxGpu')
       return
     }
     const items = [...gpuSelections.value, product]
@@ -148,7 +195,7 @@ function choose(category, product) {
     const typeCount = current.filter((item) => item.type === product.type).length
     const maxByType = { pcie: 5, sata: 6, hdd: 12 }
     if (typeCount >= maxByType[product.type]) {
-      storageNotice.value = `${product.standard} 最多可选择 ${maxByType[product.type]} 个。`
+      storageNotice.value = t('maxStorage', { standard: product.standard, count: maxByType[product.type] })
       return
     }
     const items = [...current, product]
@@ -165,11 +212,11 @@ function choose(category, product) {
     const current = memorySelections.value
     const selectedSpec = current[0]
     if (selectedSpec && selectedSpec.name !== product.name) {
-      memoryNotice.value = `已选择 ${selectedSpec.name}，内存条的代际和容量必须一致。`
+      memoryNotice.value = t('memorySame', { name: selectedSpec.name })
       return
     }
     if (current.length >= 4) {
-      memoryNotice.value = '最多可选择 4 条内存。'
+      memoryNotice.value = t('maxMemory')
       return
     }
     const items = [...current, product]
@@ -186,7 +233,7 @@ function productName(product) {
 }
 
 function productMeta(product) {
-  return typeof product === 'string' ? '可选' : product.generation ? `${product.generation} / ${product.capacity}` : product.type ? `${product.standard} / ${product.capacity}` : product.maxSize ? `最大支持 ${boardSizes.find((size) => size.rank === product.maxSize)?.value}` : `插槽 ${product.socket} / ${product.ddr.join('、')}`
+  return typeof product === 'string' ? t('available') : product.generation ? `${product.generation} / ${product.capacity}` : product.type ? `${product.standard} / ${product.capacity}` : product.maxSize ? `${t('maxSupport')} ${boardSizes.find((size) => size.rank === product.maxSize)?.value}` : `${t('socket')} ${product.socket} / ${product.ddr.join(' / ')}`
 }
 
 function isProductSelected(category, product) {
@@ -226,16 +273,34 @@ function clearConfiguration() {
   motherboardSize.value = 'ATX'
 }
 
-function exportConfiguration() {
-  const lines = ['装机配置', `导出时间：${new Date().toLocaleString('zh-CN')}`, '']
-  if (!selectedItems.value.length) lines.push('尚未选择任何组件。')
-  selectedItems.value.forEach((item) => lines.push(`${item.category}：${item.name}`))
+function downloadConfiguration(lines, filename) {
   const url = URL.createObjectURL(new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' }))
   const link = document.createElement('a')
   link.href = url
-  link.download = '装机配置.txt'
+  link.download = filename
   link.click()
   URL.revokeObjectURL(url)
+}
+
+function exportConfiguration() {
+  const locale = language.value === 'zh' ? 'zh-CN' : 'en-US'
+  const lines = [t('exportTitle'), `${t('exportTime')}: ${new Date().toLocaleString(locale)}`, '']
+  if (!selectedItems.value.length) lines.push(t('exportEmpty'))
+  selectedItems.value.forEach((item) => {
+    const slug = Object.keys(selections.value).find((key) => selections.value[key] === item)
+    lines.push(`${categoryLabel(slug) || item.category}: ${item.name}`)
+  })
+  downloadConfiguration(lines, language.value === 'zh' ? '装机配置.txt' : 'pc-configuration.txt')
+}
+
+function exportBilingualConfiguration() {
+  const lines = [t('bilingualTitle'), `${t('bilingualTime')}: ${new Date().toLocaleString('zh-CN')}`, '']
+  if (!selectedItems.value.length) lines.push(t('bilingualEmpty'))
+  selectedItems.value.forEach((item) => {
+    const slug = Object.keys(selections.value).find((key) => selections.value[key] === item)
+    lines.push(`${categoryCopy[slug]?.en?.[0] || item.category} / ${categoryCopy[slug]?.zh?.[0] || item.category}: ${item.name}`)
+  })
+  downloadConfiguration(lines, 'pc-configuration-bilingual.txt')
 }
 
 function handlePopState() {
@@ -272,33 +337,35 @@ onUnmounted(() => window.removeEventListener('popstate', handlePopState))
 <template>
   <main class="site-shell">
     <header class="topbar">
-      <button class="brand" aria-label="返回首页" @click="navigate('/')"><span class="brand-dot"></span>BUILD/FORM</button>
+      <button class="brand" :aria-label="t('back')" @click="navigate('/')"><span class="brand-dot"></span>BUILD/FORM</button>
       <div class="header-actions">
-        <a class="header-text-button" href="https://tkr-studio.com/" target="_blank" rel="noopener noreferrer">查查成分</a>
-        <button class="header-text-button" @click="clearConfiguration">清空配置</button>
-        <button class="header-text-button" @click="exportConfiguration">导出配置</button>
-        <button class="summary-button" @click="document.getElementById('workspace')?.scrollIntoView({ behavior: 'smooth' })">已选 {{ selectedItems.length }} 项</button>
+        <button class="header-text-button" @click="setLanguage">{{ t('switchLanguage') }}</button>
+        <a class="header-text-button" href="https://tkr-studio.com/" target="_blank" rel="noopener noreferrer">{{ t('checkIngredients') }}</a>
+        <button class="header-text-button" @click="clearConfiguration">{{ t('clear') }}</button>
+        <button class="header-text-button" @click="exportConfiguration">{{ t('export') }}</button>
+        <button class="header-text-button" @click="exportBilingualConfiguration">{{ t('bilingualExport') }}</button>
+        <button class="summary-button" @click="document.getElementById('workspace')?.scrollIntoView({ behavior: 'smooth' })">{{ t('selected') }} {{ selectedItems.length }} {{ t('item') }}</button>
       </div>
     </header>
 
     <template v-if="!activeCategory">
       <section class="intro">
         <p class="eyebrow">PERSONAL COMPUTER CONFIGURATOR</p>
-        <h1>装机<br><i>？！装装？！</i></h1>
-        <p class="intro-copy">从处理器到机箱，循序完成属于你的硬件搭配。选择没有标准答案，只有更接近你工作方式的配置。</p>
-        <a class="text-link" href="#workspace">开始配置 <span>↓</span></a>
+        <h1>{{ t('heroTitle') }}<br><i>{{ t('heroSubtitle') }}</i></h1>
+        <p class="intro-copy">{{ t('heroCopy') }}</p>
+        <a class="text-link" href="#workspace">{{ t('start') }} <span>↓</span></a>
       </section>
 
       <section id="workspace" class="workspace">
-        <div class="section-heading"><p class="eyebrow">01 / SELECT COMPONENTS</p></div>
+        <div class="section-heading"><p class="eyebrow">01 / {{ t('selectComponents') }}</p></div>
         <div class="component-grid">
           <button v-for="(category, index) in categories" :key="category.slug" class="component-card" :class="category.tone" @click="navigate(`/${category.slug}`)">
             <span class="card-number">0{{ index + 1 }}</span><span class="hardware-mark">{{ category.mark }}</span>
-            <span class="card-title">{{ category.name }}</span><span class="card-detail">{{ category.detail }}</span><span class="card-arrow">↗</span>
+            <span class="card-title">{{ categoryLabel(category.slug) }}</span><span class="card-detail">{{ categoryText(category.slug, 1) }}</span><span class="card-arrow">↗</span>
             <span v-if="selectedLabel(category)" class="card-selection">{{ selectedLabel(category) }}</span>
-            <span v-if="category.slug === 'memory' && hasMemorySlotWarning" class="memory-card-warning">注意主板内存插槽</span>
-            <span v-if="category.slug === 'gpu' && hasGpuSlotWarning" class="memory-card-warning">注意主板 PCIe 插槽</span>
-            <span v-if="category.slug === 'storage' && hasStorageSlotWarning" class="memory-card-warning">注意主板存储接口</span>
+            <span v-if="category.slug === 'memory' && hasMemorySlotWarning" class="memory-card-warning">{{ t('memorySlots') }}</span>
+            <span v-if="category.slug === 'gpu' && hasGpuSlotWarning" class="memory-card-warning">{{ t('gpuSlots') }}</span>
+            <span v-if="category.slug === 'storage' && hasStorageSlotWarning" class="memory-card-warning">{{ t('storagePorts') }}</span>
           </button>
         </div>
       </section>
@@ -307,36 +374,36 @@ onUnmounted(() => window.removeEventListener('popstate', handlePopState))
 
     <template v-else>
       <section class="detail-page">
-        <button class="back-button" @click="navigate('/')">← 返回全部组件</button>
+        <button class="back-button" @click="navigate('/')">← {{ t('back') }}</button>
         <p class="eyebrow">COMPONENT / {{ activeCategory.mark }}</p>
-        <div class="detail-heading"><div><h1>{{ activeCategory.name }}<small>{{ activeCategory.detail }}</small></h1><p>{{ activeCategory.intro }}</p></div><div class="detail-mark" :class="activeCategory.tone">{{ activeCategory.mark }}</div></div>
+        <div class="detail-heading"><div><h1>{{ categoryLabel(activeCategory.slug) }}<small>{{ categoryText(activeCategory.slug, 1) }}</small></h1><p>{{ categoryText(activeCategory.slug, 2) }}</p></div><div class="detail-mark" :class="activeCategory.tone">{{ activeCategory.mark }}</div></div>
         <div v-if="activeCategory.slug === 'cpu'" class="cpu-tools">
-          <label for="cpu-search">在 {{ categories[0].products.length }} 个 CPU 型号中搜索</label>
-          <input id="cpu-search" v-model="cpuSearch" type="search" placeholder="例如：Ryzen 7 7800X3D 或 Core i5-14600K" @input="cpuVisibleCount = 50">
+          <label for="cpu-search">{{ t('searchCpu', { count: categories[0].products.length }) }}</label>
+          <input id="cpu-search" v-model="cpuSearch" type="search" :placeholder="t('cpuPlaceholder')" @input="cpuVisibleCount = 50">
         </div>
         <div v-if="activeCategory.slug === 'gpu'" class="cpu-tools">
-          <label for="gpu-search">在 {{ gpuModels.length }} 个显卡型号中搜索</label>
-          <input id="gpu-search" v-model="gpuSearch" type="search" placeholder="例如：RTX 5090 D V2、RX 9070 XT 或 Arc B580" @input="gpuVisibleCount = 50">
+          <label for="gpu-search">{{ t('searchGpu', { count: gpuModels.length }) }}</label>
+          <input id="gpu-search" v-model="gpuSearch" type="search" :placeholder="t('gpuPlaceholder')" @input="gpuVisibleCount = 50">
         </div>
         <div v-if="activeCategory.slug === 'motherboard'" class="size-control">
-          <label for="motherboard-size">主板规格</label>
+          <label for="motherboard-size">{{ t('boardSize') }}</label>
           <select id="motherboard-size" v-model="motherboardSize" @change="updateMotherboardSize">
             <option v-for="size in boardSizes" :key="size.value" :value="size.value" :disabled="selections.case && size.rank > selections.case.product.maxSize">{{ size.value }}</option>
           </select>
         </div>
         <div class="product-list">
           <button v-for="product in displayedProducts" :key="productName(product)" class="product-row" :class="{ selected: isProductSelected(activeCategory, product), disabled: productDisabled(activeCategory, product) }" :disabled="productDisabled(activeCategory, product)" @click="choose(activeCategory, product)">
-            <span class="product-name">{{ productName(product) }}</span><span class="product-price">{{ productMeta(product) }}</span><span class="select-state">{{ productDisabled(activeCategory, product) ? disabledReason(activeCategory, product) : isProductSelected(activeCategory, product) ? '已选择' : '选择' }}</span>
+            <span class="product-name">{{ productName(product) }}</span><span class="product-price">{{ productMeta(product) }}</span><span class="select-state">{{ productDisabled(activeCategory, product) ? disabledReason(activeCategory, product) : isProductSelected(activeCategory, product) ? t('chosen') : t('choose') }}</span>
           </button>
         </div>
-        <div v-if="activeCategory.slug === 'memory'" class="memory-selection-info"><span>已选择 {{ memorySelections.length }} / 4 条内存。{{ memoryNotice }}</span><button v-if="memorySelections.length" @click="clearMemory">清空内存选择</button></div>
-        <div v-if="activeCategory.slug === 'gpu'" class="memory-selection-info"><span>已选择 {{ gpuSelections.length }} / 4 张显卡。{{ gpuNotice }}</span><button v-if="gpuSelections.length" @click="clearMultiSelection('gpu')">清空显卡选择</button></div>
-        <div v-if="activeCategory.slug === 'storage'" class="memory-selection-info"><span>PCIe {{ storagePcieCount }} / 5，SATA + 机械硬盘 {{ storageSataHddCount }}。{{ storageNotice }}</span><button v-if="storageSelections.length" @click="clearMultiSelection('storage')">清空存储选择</button></div>
-        <button v-if="activeCategory.slug === 'cpu' && cpuVisibleCount < cpuResults.length" class="load-more" @click="cpuVisibleCount += 50">加载更多（已显示 {{ displayedProducts.length }} / {{ cpuResults.length }}）</button>
-        <button v-if="activeCategory.slug === 'gpu' && gpuVisibleCount < gpuResults.length" class="load-more" @click="gpuVisibleCount += 50">加载更多（已显示 {{ displayedProducts.length }} / {{ gpuResults.length }}）</button>
-        <p v-else-if="activeCategory.slug === 'cpu' && !cpuResults.length" class="empty-state">没有匹配的 CPU 型号。</p>
-        <p v-else-if="activeCategory.slug === 'gpu' && !gpuResults.length" class="empty-state">没有匹配的显卡型号。</p>
-        <div class="next-control"><span>已选 {{ selectedItems.length }} / {{ categories.length }} 个组件</span><button @click="navigate('/')">继续搭配 →</button></div>
+        <div v-if="activeCategory.slug === 'memory'" class="memory-selection-info"><span>{{ t('memoryChosen', { count: memorySelections.length, notice: memoryNotice }) }}</span><button v-if="memorySelections.length" @click="clearMemory">{{ t('clearMemory') }}</button></div>
+        <div v-if="activeCategory.slug === 'gpu'" class="memory-selection-info"><span>{{ t('gpuChosen', { count: gpuSelections.length, notice: gpuNotice }) }}</span><button v-if="gpuSelections.length" @click="clearMultiSelection('gpu')">{{ t('clearGpu') }}</button></div>
+        <div v-if="activeCategory.slug === 'storage'" class="memory-selection-info"><span>{{ t('storageChosen', { pcie: storagePcieCount, other: storageSataHddCount, notice: storageNotice }) }}</span><button v-if="storageSelections.length" @click="clearMultiSelection('storage')">{{ t('clearStorage') }}</button></div>
+        <button v-if="activeCategory.slug === 'cpu' && cpuVisibleCount < cpuResults.length" class="load-more" @click="cpuVisibleCount += 50">{{ t('loadMore', { shown: displayedProducts.length, total: cpuResults.length }) }}</button>
+        <button v-if="activeCategory.slug === 'gpu' && gpuVisibleCount < gpuResults.length" class="load-more" @click="gpuVisibleCount += 50">{{ t('loadMore', { shown: displayedProducts.length, total: gpuResults.length }) }}</button>
+        <p v-else-if="activeCategory.slug === 'cpu' && !cpuResults.length" class="empty-state">{{ t('noCpu') }}</p>
+        <p v-else-if="activeCategory.slug === 'gpu' && !gpuResults.length" class="empty-state">{{ t('noGpu') }}</p>
+        <div class="next-control"><span>{{ t('selectedCount', { selected: selectedItems.length, total: categories.length }) }}</span><button @click="navigate('/')">{{ t('continue') }} →</button></div>
       </section>
     </template>
   </main>
