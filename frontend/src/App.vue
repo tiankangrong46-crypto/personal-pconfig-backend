@@ -36,10 +36,34 @@ const categoryCopy = {
   case: { zh: ['机箱', '整机外观', '机箱尺寸决定可容纳的主板规格。'], en: ['Case', 'Enclosure', 'Case size determines the supported motherboard form factor.'] },
 }
 
+const productCopy = {
+  cooler: {
+    '4 热管单塔风冷': { zh: '4 热管单塔风冷', en: '4-heatpipe single-tower air cooler' },
+    '4 热管双塔风冷': { zh: '4 热管双塔风冷', en: '4-heatpipe dual-tower air cooler' },
+    '6 热管单塔风冷': { zh: '6 热管单塔风冷', en: '6-heatpipe single-tower air cooler' },
+    '6 热管双塔风冷': { zh: '6 热管双塔风冷', en: '6-heatpipe dual-tower air cooler' },
+    '8 热管单塔风冷': { zh: '8 热管单塔风冷', en: '8-heatpipe single-tower air cooler' },
+    '8 热管双塔风冷': { zh: '8 热管双塔风冷', en: '8-heatpipe dual-tower air cooler' },
+    '120 水冷': { zh: '120 水冷', en: '120 mm liquid cooler' },
+    '240 水冷': { zh: '240 水冷', en: '240 mm liquid cooler' },
+    '360 水冷': { zh: '360 水冷', en: '360 mm liquid cooler' },
+    '420 水冷': { zh: '420 水冷', en: '420 mm liquid cooler' },
+  },
+  case: {
+    'ITX 机箱': { zh: 'ITX 机箱', en: 'ITX case' },
+    'M-ATX 机箱': { zh: 'M-ATX 机箱', en: 'M-ATX case' },
+    'ATX 机箱': { zh: 'ATX 机箱', en: 'ATX case' },
+    'E-ATX 机箱': { zh: 'E-ATX 机箱', en: 'E-ATX case' },
+    '开放式机箱': { zh: '开放式机箱', en: 'Open-frame case' },
+  },
+}
+
 const language = ref('zh')
 const t = (key, values = {}) => (copy[language.value][key] || key).replace(/\{(\w+)\}/g, (_, name) => values[name] ?? '')
 const categoryText = (slug, index) => categoryCopy[slug]?.[language.value]?.[index] || ''
 const categoryLabel = (slug) => categoryText(slug, 0)
+const localizedProductName = (slug, product, locale = language.value) => productCopy[slug]?.[productName(product)]?.[locale] || productName(product)
+const bilingualProductName = (slug, product) => productCopy[slug]?.[productName(product)] ? `${localizedProductName(slug, product, 'en')} / ${localizedProductName(slug, product, 'zh')}` : productName(product)
 const setLanguage = () => {
   language.value = language.value === 'zh' ? 'en' : 'zh'
   memoryNotice.value = ''
@@ -251,7 +275,8 @@ function updateMotherboardSize() {
 }
 
 function selectedLabel(category) {
-  return selections.value[category.slug]?.name || ''
+  const selection = selections.value[category.slug]
+  return selection ? localizedProductName(category.slug, selection.name) : ''
 }
 
 function clearMemory() {
@@ -288,7 +313,7 @@ function exportConfiguration() {
   if (!selectedItems.value.length) lines.push(t('exportEmpty'))
   selectedItems.value.forEach((item) => {
     const slug = Object.keys(selections.value).find((key) => selections.value[key] === item)
-    lines.push(`${categoryLabel(slug) || item.category}: ${item.name}`)
+    lines.push(`${categoryLabel(slug) || item.category}: ${localizedProductName(slug, item.name)}`)
   })
   downloadConfiguration(lines, language.value === 'zh' ? '装机配置.txt' : 'pc-configuration.txt')
 }
@@ -298,7 +323,7 @@ function exportBilingualConfiguration() {
   if (!selectedItems.value.length) lines.push(t('bilingualEmpty'))
   selectedItems.value.forEach((item) => {
     const slug = Object.keys(selections.value).find((key) => selections.value[key] === item)
-    lines.push(`${categoryCopy[slug]?.en?.[0] || item.category} / ${categoryCopy[slug]?.zh?.[0] || item.category}: ${item.name}`)
+    lines.push(`${categoryCopy[slug]?.en?.[0] || item.category} / ${categoryCopy[slug]?.zh?.[0] || item.category}: ${bilingualProductName(slug, item.name)}`)
   })
   downloadConfiguration(lines, 'pc-configuration-bilingual.txt')
 }
@@ -393,7 +418,7 @@ onUnmounted(() => window.removeEventListener('popstate', handlePopState))
         </div>
         <div class="product-list">
           <button v-for="product in displayedProducts" :key="productName(product)" class="product-row" :class="{ selected: isProductSelected(activeCategory, product), disabled: productDisabled(activeCategory, product) }" :disabled="productDisabled(activeCategory, product)" @click="choose(activeCategory, product)">
-            <span class="product-name">{{ productName(product) }}</span><span class="product-price">{{ productMeta(product) }}</span><span class="select-state">{{ productDisabled(activeCategory, product) ? disabledReason(activeCategory, product) : isProductSelected(activeCategory, product) ? t('chosen') : t('choose') }}</span>
+            <span class="product-name">{{ localizedProductName(activeCategory.slug, product) }}</span><span class="product-price">{{ productMeta(product) }}</span><span class="select-state">{{ productDisabled(activeCategory, product) ? disabledReason(activeCategory, product) : isProductSelected(activeCategory, product) ? t('chosen') : t('choose') }}</span>
           </button>
         </div>
         <div v-if="activeCategory.slug === 'memory'" class="memory-selection-info"><span>{{ t('memoryChosen', { count: memorySelections.length, notice: memoryNotice }) }}</span><button v-if="memorySelections.length" @click="clearMemory">{{ t('clearMemory') }}</button></div>
