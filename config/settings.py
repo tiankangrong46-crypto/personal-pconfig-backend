@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
 import os
+import re
 from urllib.parse import urlparse
 from pathlib import Path
 
@@ -27,11 +28,9 @@ SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "django-insecure-local-developm
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get("DJANGO_DEBUG", "True").lower() in {"1", "true", "yes", "on"}
 
-ALLOWED_HOSTS = [host.strip() for host in os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if host.strip()]
+ALLOWED_HOSTS = [host for host in re.split(r"[,\s]+", os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1")) if host]
 CSRF_TRUSTED_ORIGINS = [
-    origin.strip()
-    for origin in os.environ.get("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",")
-    if origin.strip()
+    origin for origin in re.split(r"[,\s]+", os.environ.get("DJANGO_CSRF_TRUSTED_ORIGINS", "")) if origin
 ]
 
 
