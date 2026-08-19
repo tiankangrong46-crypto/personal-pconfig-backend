@@ -1,0 +1,13 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+<h1>批量导入组件</h1>
+<form method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+  <p><input type="file" name="file" accept=".json,.csv"></p>
+  <button type="submit" name="confirm" value="false">上传并预览</button>
+  {% if preview %}<input type="hidden" name="records" value='{{ records_json|escape }}'><button type="submit" name="confirm" value="true">确认写入</button>{% endif %}
+</form>
+{% if preview %}<h2>预览 {{ preview|length }} 条</h2><pre>{{ preview|pprint }}</pre>{% endif %}
+{% if errors %}<h2>错误</h2><pre>{{ errors|pprint }}</pre>{% endif %}
+{% if result %}<h2>导入结果</h2><pre>{{ result|pprint }}</pre>{% endif %}
+{% endblock %}

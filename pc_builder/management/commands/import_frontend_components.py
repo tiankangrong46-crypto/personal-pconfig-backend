@@ -75,10 +75,4 @@ class Command(BaseCommand):
                 defaults={"attributes": attributes, "is_active": True, "sort_order": order},
             )
 
-        expected_names = {}
-        for category, name, _ in records:
-            expected_names.setdefault(category, set()).add(name)
-        for category, names in expected_names.items():
-            Component.objects.filter(category=category).exclude(name__in=names).delete()
-
         self.stdout.write(self.style.SUCCESS(f"已同步 {len(records)} 条组件数据。"))
