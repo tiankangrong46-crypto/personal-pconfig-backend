@@ -10,7 +10,7 @@ from .importers import parse_upload, normalize_component_record, import_records
 
 @admin.register(Component)
 class ComponentAdmin(admin.ModelAdmin):
-    list_display = ("name", "category", "is_active", "sort_order", "updated_at")
+    list_display = ("category", "name", "sort_order", "is_active", "updated_at")
     list_filter = ("category", "is_active")
     search_fields = ("name",)
     list_editable = ("is_active", "sort_order")
@@ -24,6 +24,14 @@ class ComponentAdmin(admin.ModelAdmin):
 
     def get_urls(self):
         return [path("import/", self.admin_site.admin_view(self.import_view), name="pc_builder_component_import")] + super().get_urls()
+
+    def save_model(self, request, obj, form, change):
+        # New records without an explicit order are appended within their category.
+        if not change and obj.sort_order == 0:
+            last = Component.objects.filter(category=obj.category).order_by("-sort_order").first()
+            if last is not None:
+                obj.sort_order = last.sort_order + 1
+        super().save_model(request, obj, form, change)
 
     @staff_member_required
     def import_view(self, request):

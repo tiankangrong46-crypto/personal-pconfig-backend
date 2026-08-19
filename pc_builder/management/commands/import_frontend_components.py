@@ -68,7 +68,10 @@ class Command(BaseCommand):
         records.extend((Component.Category.COOLER, name, {}) for name in cooler_names)
         records.extend((Component.Category.CASE, name, {"max_size": max_size}) for name, max_size in [("ITX 机箱", 1), ("M-ATX 机箱", 2), ("ATX 机箱", 3), ("E-ATX 机箱", 4), ("开放式机箱", 4)])
 
-        for order, (category, name, attributes) in enumerate(records):
+        category_orders = {}
+        for category, name, attributes in records:
+            order = category_orders.get(category, 0)
+            category_orders[category] = order + 1
             Component.objects.update_or_create(
                 category=category,
                 name=name,
