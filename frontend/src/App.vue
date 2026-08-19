@@ -259,7 +259,13 @@ function productName(product) {
 }
 
 function productMeta(product) {
-  return typeof product === 'string' ? t('available') : product.generation ? `${product.generation} / ${product.capacity}` : product.type ? `${product.standard} / ${product.capacity}` : product.maxSize ? `${t('maxSupport')} ${boardSizes.find((size) => size.rank === product.maxSize)?.value}` : `${t('socket')} ${product.socket} / ${product.ddr.join(' / ')}`
+  if (typeof product === 'string') return t('available')
+  if (product.generation) return `${product.generation} / ${product.capacity || product.name}`
+  if (product.type) return `${product.standard || product.type} / ${product.capacity || product.name}`
+  const maxSize = product.maxSize ?? product.max_size
+  if (maxSize) return `${t('maxSupport')} ${boardSizes.find((size) => size.rank === maxSize)?.value || product.name}`
+  if (product.socket && Array.isArray(product.ddr)) return `${t('socket')} ${product.socket} / ${product.ddr.join(' / ')}`
+  return product.name || t('available')
 }
 
 function isProductSelected(category, product) {
@@ -336,7 +342,8 @@ function handlePopState() {
 
 function apiProduct(component) {
   if (component.category === 'motherboard') return { chipset: component.name, ...component.attributes }
-  if (component.category === 'memory' || component.category === 'storage' || component.category === 'case') return { name: component.name, ...component.attributes }
+  if (component.category === 'case') return { name: component.name, maxSize: component.attributes.max_size ?? component.attributes.maxSize, ...component.attributes }
+  if (component.category === 'memory' || component.category === 'storage') return { name: component.name, ...component.attributes }
   return component.name
 }
 
