@@ -32,6 +32,9 @@ ALLOWED_HOSTS = [host for host in re.split(r"[,\s]+", os.environ.get("DJANGO_ALL
 CSRF_TRUSTED_ORIGINS = [
     origin for origin in re.split(r"[,\s]+", os.environ.get("DJANGO_CSRF_TRUSTED_ORIGINS", "")) if origin
 ]
+CORS_ALLOWED_ORIGINS = [
+    origin for origin in re.split(r"[,\s]+", os.environ.get("CORS_ALLOWED_ORIGINS", "https://pconfig.tkr-studio.com")) if origin
+]
 
 
 # Application definition
@@ -44,12 +47,14 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "corsheaders",
     "pc_builder",
 ]
 
 MIDDLEWARE = [
     "pc_builder.middleware.HealthCheckMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",

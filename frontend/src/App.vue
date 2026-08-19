@@ -100,6 +100,8 @@ const caseProducts = [
   { name: 'ITX 机箱', maxSize: 1 }, { name: 'M-ATX 机箱', maxSize: 2 }, { name: 'ATX 机箱', maxSize: 3 }, { name: 'E-ATX 机箱', maxSize: 4 }, { name: '开放式机箱', maxSize: 4 },
 ]
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (window.location.hostname === 'localhost' ? '' : 'https://api.pconfig.tkr-studio.com')
+
 const categories = reactive([
   { slug: 'cpu', name: 'CPU', detail: '处理器', mark: 'CPU', tone: 'cyan', intro: '提供 AMD Ryzen 与第五代及以上 Intel Core 消费级处理器。', products: consumerCpuModels },
   { slug: 'motherboard', name: '主板', detail: '连接平台', mark: 'MB', tone: 'lime', intro: '按 CPU 插槽和代际选择消费级主板芯片组。', products: motherboardChipsets },
@@ -340,7 +342,7 @@ function apiProduct(component) {
 
 async function loadComponents() {
   try {
-    const response = await fetch('/api/components/')
+    const response = await fetch(`${API_BASE_URL}/api/components/`)
     if (!response.ok) throw new Error('组件 API 请求失败')
     const { results } = await response.json()
     const byCategory = Object.groupBy(results, (component) => component.category)
